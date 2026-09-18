@@ -3,7 +3,6 @@ import express, {
   type Request,
   type Response,
 } from "express";
-import type { AnyARecord } from "node:dns";
 import { Pool } from "pg";
 
 const app: Application = express();
@@ -65,50 +64,90 @@ app.post("/api/users", async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/users', async(req: Request, res: Response) => {
-   try {
-    const result=await pool.query(`
+app.get("/api/users", async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(`
         SELECT * FROM users
-      `)
-      res.status(200).json({
-        success:true,
-        message:"Users retrived successfully",
-        data:result.rows})
-   } catch (error:any) {
+      `);
+    res.status(200).json({
+      success: true,
+      message: "Users retrived successfully",
+      data: result.rows,
+    });
+  } catch (error: any) {
     res.status(500).json({
-        success:false,
-        message: error.message,
-        error:error})
-   }
+      success: false,
+      message: error.message,
+      error: error,
+    });
+  }
 });
 
-app.get('/api/users/:id',async(req: Request, res: Response) => {
-  const {id}=req.params;
+app.get("/api/users/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
   // const id=req.params.id;
   // console.log(id)
   try {
-    const result=await pool.query(`
+    const result = await pool.query(
+      `
           SELECT * FROM users 
           WHERE id=$1
-      `,[id]);
+      `,
+      [id],
+    );
 
-      if(result.rows.length === 0){
-        res.status(500).json({
-        success:false,
-        message:"User not found",
-        data:{}})
-      }
+    if (result.rows.length === 0) {
+      res.status(404).json({
+        success: false,
+        message: "User not found",
+        data: {},
+      });
+    }
 
-      res.status(200).json({
-        success:true,
-        message:"User retrived successfully",
-        data:result.rows[0]})
-  } catch (error:any) {
+    res.status(200).json({
+      success: true,
+      message: "User retrived successfully",
+      data: result.rows[0],
+    });
+  } catch (error: any) {
     res.status(500).json({
-        success:false,
-        message: error.message,
-        error:error})
-   
+      success: false,
+      message: error.message,
+      error: error,
+    });
+  }
+});
+
+app.put("/api/users/:id", async (req: Request, res: Response) => {
+  const {id}=req.params;
+  const {name,password, is_active}=req.body;
+  // console.log(id)
+  // console.log(name,password, is_active)
+
+  try {
+    const result=await pool.query(`
+      UPDATE users SET name=$1,password=$2,is_active=$3 
+      WHERE id=$4 RETURNING *
+    `,[name,password,is_active,id]);
+
+    if(result.rows.length===0){
+        res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+    // console.log(result)
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      data: result.rows[0],
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+      error: error,
+    });
   }
 })
 
