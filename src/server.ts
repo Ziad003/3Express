@@ -12,8 +12,10 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.post("/",(req:Request,res:Response)=>{
-    console.log(req.body)
-})
+    // console.log(req.body)
+    const {name,email,password}=req.body;
+    res.status(201).json({message: "Created", data: {name,email}});
+});
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
