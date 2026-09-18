@@ -23,7 +23,7 @@ const initDb= async ()=>{
                 CREATE TABLE IF NOT EXISTS users (
                     id SERIAL PRIMARY KEY,
                     name VARCHAR(20) NOT NULL,
-                    email VARCHAR(50) NOT NULL,
+                    email VARCHAR(50) UNIQUE NOT NULL,
                     password VARCHAR(20) NOT NULL,
                     is_active BOOLEAN DEFAULT true,
 
@@ -43,10 +43,21 @@ app.get("/", (req: Request, res: Response) => {
   res.status(200).json({ message: "This is root" });
 });
 
-app.post("/", (req: Request, res: Response) => {
+app.post("/", async (req: Request, res: Response) => {
   // console.log(req.body)
   const { name, email, password } = req.body;
-  res.status(201).json({ message: "Created", data: { name, email } });
+
+  try {
+      const result=await pool.query(`
+        INSERT INTO users(name, email, password) VALUES($1,$2,$3) RETURNING *
+    `,[name,email,password]);
+    // console.log(result.rows[0])
+
+  res.status(201).json({ message: "User created successfully", data: result.rows[0] });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message, error: error });
+  }
+
 });
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
