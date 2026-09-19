@@ -119,21 +119,24 @@ app.get("/api/users/:id", async (req: Request, res: Response) => {
 });
 
 app.put("/api/users/:id", async (req: Request, res: Response) => {
-  const {id}=req.params;
-  const {name,password, is_active}=req.body;
+  const { id } = req.params;
+  const { name, password, is_active } = req.body;
   // console.log(id)
   // console.log(name,password, is_active)
 
   try {
-    const result=await pool.query(`
+    const result = await pool.query(
+      `
       UPDATE users SET name=COALESCE($1, name),password=COALESCE($2, password),is_active=COALESCE($3, is_active) 
       WHERE id=COALESCE($4, id) RETURNING *
-    `,[name,password,is_active,id]);
+    `,
+      [name, password, is_active, id],
+    );
 
-    if(result.rows.length===0){
-        res.status(404).json({
+    if (result.rows.length === 0) {
+      res.status(404).json({
         success: false,
-        message: "User not found"
+        message: "User not found",
       });
     }
     // console.log(result)
@@ -149,7 +152,33 @@ app.put("/api/users/:id", async (req: Request, res: Response) => {
       error: error,
     });
   }
-})
+});
+
+app.delete("/api/users/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `
+        DELETE FROM users WHERE id=$1 RETURNING *
+      `,
+      [id],
+    );
+    if(result.rowCount===0){
+      res.status(404).json({success:false, message:"User not found"})
+    }
+    res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+      data: {},
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+      error: error,
+    });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
